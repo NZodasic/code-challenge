@@ -57,17 +57,17 @@ To prevent malicious users from inflating scores without authorization, the modu
 1. **Server-Authoritative Score Deltas:**
    The client **never** specifies the score increment or total score. The client only sends the `actionType` (e.g. `task_complete`), and the server looks up the immutable score delta.
 2. **User Authentication:**
-   Requests must provide a valid Bearer JWT. Anonymous requests are rejected immediately ($401$).
+   Requests must provide a valid Bearer JWT. Anonymous requests are rejected immediately (`401 Unauthorized`).
 3. **HMAC-SHA256 Request Signing:**
    Payloads (`userId:actionType:nonce:timestamp`) are signed with a per-user secret derived from a master server key. Verified using `crypto.timingSafeEqual` to avoid timing attacks.
 4. **Replay Protection (Nonce Store):**
    Each request requires a unique UUIDv4 nonce, stored with a 5-minute TTL. Duplicate nonces return `400 Replay detected`.
 5. **Timestamp Window:**
-   Requests with $|T_{\text{server}} - T_{\text{client}}| > 30\text{s}$ are rejected to prevent delayed packet replays.
+   Requests with `|server_time - client_time| > 30s` are rejected to prevent delayed packet replays.
 6. **Token Bucket Rate Limiting:**
    Limits rapid-fire bot requests per user (burst of 10, refills 1 token every 6 seconds).
 7. **Efficient Ranking (Sorted Set):**
-   Maintains scores using a Sorted Set ($O(\log N)$ update, $O(K)$ top-10 retrieval). In production, this maps directly to Redis `ZSET`.
+   Maintains scores using a Sorted Set (`O(log N)` update, `O(K)` top-10 retrieval). In production, this maps directly to Redis `ZSET`.
 8. **Live WebSocket Broadcasts:**
    Clients connect to `ws://<host>/ws/leaderboard`. When a score change alters the top 10 standings, the server pushes the new top 10 list to connected clients.
 
